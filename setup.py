@@ -4,15 +4,15 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='pylxd-light',
+    name='lxdapi',
     version='0.0.0',
-    author='Hiroaki Nakamura, James Pic',
+    author='James Pic',
     author_email='jamespic@gmail.com',
     packages=find_packages(exclude=['tests']),
     zip_safe=False,
     include_package_data=True,
-    url='https://github.com/novafloss/pylxd-light',
-    description='Experimental alternative to pylxd',
+    url='https://github.com/novafloss/lxdapi',
+    description='Low-level alternative to pylxd',
     classifiers=[
         "Intended Audience :: Developers",
         "License :: OSI Approved :: ISC License (ISCL)",

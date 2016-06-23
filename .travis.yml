@@ -1,0 +1,32 @@
+sudo: required
+dist: trusty
+
+language: python
+python:
+- '3.5'
+
+env:
+- TOXENV=py27
+- TOXENV=py35
+- TOXENV=qa
+
+install:
+- test "$TOXENV" = "qa" || travis_retry wget https://github.com/novafloss/ansible-setup/archive/master.tar.gz
+- test "$TOXENV" = "qa" || tar xvjf master.tar.gz
+- test "$TOXENV" = "qa" || cd ansible-setup-master/
+- test "$TOXENV" = "qa" || sudo SETUP_LXC=1 DEBUG=1 ./setup.sh
+- travis_retry pip install -U pip
+- travis_retry pip install tox codecov
+
+script:
+- DEBUG=1 tox -e $TOXENV
+
+after_success:
+- codecov
+
+cache:
+  directories:
+  - "$HOME/.cache/pip"
+
+before_cache:
+- rm -f $HOME/.cache/pip/log/debug.log

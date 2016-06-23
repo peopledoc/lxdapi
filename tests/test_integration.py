@@ -1,23 +1,25 @@
-from pylxd_light import lxd
+from lxdapi import lxd
 
+def test_container():
+    api = lxd.API.factory()['1.0']
+    name = 'lxdapi-test-container'
 
-def test_container_state_started_idempotence():
-    api = lxd.API()
+    lxd.container_absent(api, name)
 
-    def container_started():
-        return api.container_apply(
-            config=dict(
-                name='bloa',
-                source=dict(
-                    type='image',
-                    mode='pull',
-                    server='https://images.linuxcontainers.org',
-                    protocol='lxd',
-                    alias='ubuntu/xenial/amd64',
-                ),
-                profiles=['default'],
+    lxd.container_apply(
+        api,
+        config=dict(
+            name=name,
+            source=dict(
+                type='image',
+                mode='pull',
+                server='https://images.linuxcontainers.org',
+                protocol='lxd',
+                alias='ubuntu/xenial/amd64',
             ),
-        )
+            profiles=['default'],
+        ),
+        status='Running',
+    )
 
-    assert container_started().changed == True
-    assert container_started().changed == False
+    assert lxd.container_exists(api, name)
