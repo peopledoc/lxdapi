@@ -1,3 +1,5 @@
+
+
 def container_absent(api, name):
     container = container_get(api, name)
 
@@ -13,32 +15,39 @@ def container_absent(api, name):
     container_destroy(api, name)
 
 
-def container_apply(api, config, status):
-    container = container_get(api, config['name'])
+def container_apply_config(api, config, _container=None):
+    container = _container or container_get(api, config['name'])
 
     if not container:
         api.post('containers', json=config).wait()
-        container = api.get('containers/{}', config['name'])
+        return api.get('containers/{}', config['name']), True
+    return container, False
 
-    if status != container['metadata']['status']:
-        if status == 'Running':
-            action = 'start'
-        elif status == 'Stopped':
-            action = 'stop'
-        elif status == 'Frozen':
-            action = 'freeze'
-        else:
-            raise Exception('Status %s not understood, choices are: %s' % (
-                status,
-                ['Running', 'Stopped', 'Frozen'],
-            ))
 
-        container = api.put('containers/{}/state', config['name'], json=dict(
-            action=action,
-            timeout=api.default_timeout,
-        )).wait()
+def container_apply_status(api, name, status, _container=None):
+    container = _container or container_get(api, name)
 
-    return container
+    if status == container['metadata']['status']:
+        return container, False
+
+    if status == 'Running':
+        action = 'start'
+    elif status == 'Stopped':
+        action = 'stop'
+    elif status == 'Frozen':
+        action = 'freeze'
+    else:
+        raise Exception('Status %s not understood, choices are: %s' % (
+            status,
+            ['Running', 'Stopped', 'Frozen'],
+        ))
+
+    api.put('containers/{}/state', name, json=dict(
+        action=action,
+        timeout=api.default_timeout,
+    )).wait()
+
+    return container, True
 
 
 def container_destroy(api, name):

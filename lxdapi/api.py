@@ -1,12 +1,11 @@
-from __future__ import unicode_literals
 from __future__ import print_function
+from __future__ import unicode_literals
 
 import json
-import logging
-import pprint
 import os
 
 import requests
+
 import requests_unixsocket
 
 
@@ -100,7 +99,7 @@ class API(object):
         self.session = session
         self.debug = debug or os.environ.get('DEBUG', False)
 
-    def request(self, method, url, *url_format_args, **kwargs):
+    def format_url(self, url, *url_format_args):
         try:
             url = url.format(*url_format_args)
         except IndexError:
@@ -111,7 +110,10 @@ class API(object):
         if not url.startswith('/'):
             url = '/{}/{}'.format(self.default_version, url)
 
-        url = self.endpoint + url
+        return self.endpoint + url
+
+    def request(self, method, url, *url_format_args, **kwargs):
+        url = self.format_url(url, *url_format_args)
 
         result = APIResult(
             self,

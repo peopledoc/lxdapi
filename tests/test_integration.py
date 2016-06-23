@@ -6,7 +6,7 @@ def test_container():
 
     lxd.container_absent(api, name)
 
-    lxd.container_apply(
+    container, changed = lxd.container_apply_config(
         api,
         config=dict(
             name=name,
@@ -19,7 +19,13 @@ def test_container():
             ),
             profiles=['default'],
         ),
-        status='Running',
     )
+    assert changed
+
+    container, changed = lxd.container_apply_status(api, name, 'Running')
+    assert changed
+
+    container, changed = lxd.container_apply_status(api, name, 'Running')
+    assert not changed
 
     assert lxd.container_exists(api, name)
