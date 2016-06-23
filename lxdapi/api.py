@@ -58,9 +58,7 @@ class APIResult(object):
     def wait(self, timeout=None):
         timeout = timeout or self.api.default_timeout
 
-        result = self.api.for_url(
-            '{0}/wait?timeout={1}'.format(self['operation'], timeout)
-        ).get()
+        result = self.api.get('{}/wait?timeout={}', self['operation'], timeout)
 
         if result['metadata']['status'] != 'Success':
             raise APIException(result)
@@ -70,45 +68,47 @@ class APIResult(object):
 
 class API(object):
     @classmethod
-    def factory(cls, base_url=None, **kwargs):
-        if not base_url:
-            base_url = '/var/lib/lxd/unix.socket'
+    def factory(cls, endpoint=None, default_version=None, **kwargs):
+        endpoint = endpoint or '/var/lib/lxd/unix.socket'
+        default_version = default_version or '1.0'
 
-        if base_url.startswith('/'):
-            if not os.path.exists(base_url):
-                raise RuntimeError('Socket %s does not exist' % base_url)
+        if endpoint.startswith('/'):
+            if not os.path.exists(endpoint):
+                raise RuntimeError('Socket %s does not exist' % endpoint)
 
-            base_url = 'http+unix://%s' % requests.compat.quote_plus(base_url)
+            endpoint = 'http+unix://{}'.format(
+                requests.compat.quote_plus(endpoint)
+            )
             session = requests_unixsocket.Session('http+unix://')
         else:
             session = requests.Session()
 
-        return cls(session=session, base_url=base_url, **kwargs)
+        return cls(
+            session=session,
+            endpoint=endpoint,
+            default_version=default_version,
+            **kwargs
+        )
 
-    def __init__(self, session, base_url, url=None, debug=False):
-        self.base_url = base_url[:-1] if base_url.endswith('/') else base_url
+    def __init__(self, session, endpoint, default_version=None, debug=False):
+        self.endpoint = endpoint[:-1] if endpoint.endswith('/') else endpoint
         self.default_timeout = 30
+        self.default_version = default_version
         self.session = session
-        self.url = url or ''
         self.debug = debug or os.environ.get('DEBUG', False)
 
-    def for_url(self, url):
-        return type(self)(
-            self.session,
-            self.base_url,
-            url=url,
-            debug=self.debug
-        )
+    def request(self, method, url, *url_format_args, **kwargs):
+        try:
+            url = url.format(*url_format_args)
+        except IndexError:
+            raise Exception(
+                'Could not format %s with %s' % (url, url_format_args)
+            )
 
-    def __getitem__(self, item):
-        return type(self)(
-            self.session,
-            self.base_url,
-            '{}/{}'.format(self.url, item)
-        )
+        if not url.startswith('/'):
+            url = '/{}/{}'.format(self.default_version, url)
 
-    def request(self, method, **kwargs):
-        url = self.base_url + self.url
+        url = self.endpoint + url
 
         result = APIResult(
             self,
@@ -124,14 +124,14 @@ class API(object):
 
         return result
 
-    def delete(self, **kwargs):
-        return self.request('DELETE', **kwargs)
+    def delete(self, url, *url_format_args, **kwargs):
+        return self.request('DELETE', url, *url_format_args, **kwargs)
 
-    def get(self, **kwargs):
-        return self.request('GET', **kwargs)
+    def get(self, url, *url_format_args, **kwargs):
+        return self.request('GET', url, *url_format_args, **kwargs)
 
-    def post(self, json, **kwargs):
-        return self.request('POST', json=json, **kwargs)
+    def post(self, url, *url_format_args, **kwargs):
+        return self.request('POST', url, *url_format_args, **kwargs)
 
-    def put(self, json, **kwargs):
-        return self.request('PUT', json=json, **kwargs)
+    def put(self, url, *url_format_args, **kwargs):
+        return self.request('PUT', url, *url_format_args, **kwargs)

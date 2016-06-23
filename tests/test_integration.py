@@ -1,7 +1,7 @@
 from lxdapi import lxd
 
 def test_container():
-    api = lxd.API.factory()['1.0']
+    api = lxd.API.factory()
     name = 'lxdapi-test-container'
 
     lxd.container_absent(api, name)

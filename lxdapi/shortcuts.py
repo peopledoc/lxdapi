@@ -4,7 +4,7 @@ def container_absent(api, name):
 
 
 def container_get(api, name):
-    container_get = api['containers'][name].get()
+    container_get = api.get('containers/{}', name)
 
     if container_get.response.status_code == 404:
         return False
@@ -19,7 +19,7 @@ def container_absent(api, name):
         return True
 
     if container['metadata']['status'] == 'Running':
-        container = api['containers'][name]['state'].put(dict(
+        container = api.put('containers/{}/state', name, json=dict(
             action='stop',
             timeout=api.default_timeout,
         )).wait()
@@ -31,8 +31,8 @@ def container_apply(api, config, status):
     container = container_get(api, config['name'])
 
     if not container:
-        api['containers'].post(config).wait()
-        container = api['containers'][config['name']].get()
+        api.post('containers', json=config).wait()
+        container = api.get('containers/{}', config['name'])
 
     if status != container['metadata']['status']:
         if status == 'Running':
@@ -47,7 +47,7 @@ def container_apply(api, config, status):
                 ['Running', 'Stopped', 'Frozen'],
             ))
 
-        container = api['containers'][config['name']]['state'].put(dict(
+        container = api.put('containers/{}/state', config['name'], json=dict(
             action=action,
             timeout=api.default_timeout,
         )).wait()
@@ -56,11 +56,11 @@ def container_apply(api, config, status):
 
 
 def container_destroy(api, name):
-    return api['containers'][name].delete().wait()
+    return api.delete('containers/{}', name).wait()
 
 
 def container_exists(api, name):
-    containers = api['containers'].get()
+    containers = api.get('containers')
 
     for container in containers['metadata']:
         if container.split('/')[-1] == name:
