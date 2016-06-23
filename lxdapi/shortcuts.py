@@ -1,18 +1,4 @@
 def container_absent(api, name):
-    if container_exists(api, name):
-        container_destroy(api, name)
-
-
-def container_get(api, name):
-    container_get = api.get('containers/{}', name)
-
-    if container_get.response.status_code == 404:
-        return False
-
-    return container_get
-
-
-def container_absent(api, name):
     container = container_get(api, name)
 
     if not container:
@@ -67,3 +53,12 @@ def container_exists(api, name):
             return True
 
     return False
+
+
+def container_get(api, name):
+    container_get = api.get('containers/{}', name)
+
+    if container_get.response.status_code == 404:
+        return False
+
+    return container_get
