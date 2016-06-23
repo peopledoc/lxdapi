@@ -1,34 +1,33 @@
+from .api import APIException
 
 
-def container_absent(api, name):
-    container = container_get(api, name)
-
+def container_absent(api, container):
     if not container:
         return True
 
-    if container['metadata']['status'] == 'Running':
-        container = api.put('containers/{}/state', name, json=dict(
-            action='stop',
-            timeout=api.default_timeout,
-        )).wait()
+    if container.metadata['status'] == 'Running':
+        api.put(
+            'containers/%s/state' % container.metadata['name'],
+            json=dict(
+                action='stop',
+                timeout=api.default_timeout,
+            )
+        ).wait()
 
-    container_destroy(api, name)
+    container_destroy(api, container.metadata['name'])
 
 
-def container_apply_config(api, config, _container=None):
-    container = _container or container_get(api, config['name'])
-
+def container_apply_config(api, container, config):
     if not container:
         api.post('containers', json=config).wait()
-        return api.get('containers/{}', config['name']), True
-    return container, False
+        return True
+
+    return False
 
 
-def container_apply_status(api, name, status, _container=None):
-    container = _container or container_get(api, name)
-
+def container_apply_status(api, container, status):
     if status == container['metadata']['status']:
-        return container, False
+        return False
 
     if status == 'Running':
         action = 'start'
@@ -37,37 +36,30 @@ def container_apply_status(api, name, status, _container=None):
     elif status == 'Frozen':
         action = 'freeze'
     else:
-        raise Exception('Status %s not understood, choices are: %s' % (
+        raise Exception('Invalid status %s, choices are: %s' % (
             status,
             ['Running', 'Stopped', 'Frozen'],
         ))
 
-    api.put('containers/{}/state', name, json=dict(
-        action=action,
-        timeout=api.default_timeout,
-    )).wait()
+    api.put(
+        'containers/%s/state' % container.data['name'],
+        json=dict(
+            action=action,
+            timeout=api.default_timeout,
+        )
+    ).wait()
 
     return container, True
 
 
 def container_destroy(api, name):
-    return api.delete('containers/{}', name).wait()
-
-
-def container_exists(api, name):
-    containers = api.get('containers')
-
-    for container in containers['metadata']:
-        if container.split('/')[-1] == name:
-            return True
-
-    return False
+    return api.delete('containers/%s' % name).wait()
 
 
 def container_get(api, name):
-    container_get = api.get('containers/{}', name)
-
-    if container_get.response.status_code == 404:
-        return False
-
-    return container_get
+    try:
+        return api.get('containers/%s' % name)
+    except APIException as e:
+        if e.result.response.status_code == 404:
+            return None
+        raise

@@ -1,3 +1,14 @@
+"""
+HTTP API classes for interfacing with the LXD API.
+
+This module leverages the composition pattern, providing 3 main classes:
+
+- :class:`API`: the entry point for dealing with the HTTP API,
+- :class:`APIResult`: returned by requests made with :class:`API`, it
+  represents an HTTP transaction.
+- :class:`APIException`: raised when the server responded with HTTP 400.
+"""
+
 from __future__ import print_function
 from __future__ import unicode_literals
 
@@ -10,7 +21,15 @@ import requests_unixsocket
 
 
 class APIException(Exception):
+    """Raised by :class:`API` on HTTP/400 responses."""
+
     def __init__(self, result):
+        """
+        Construct an APIException with an :class:`APIResult`.
+
+        It will try to find the error message in the HTTP response and use it
+        if it find it, otherwise will use the response data as message.
+        """
         self.result = result
 
         message = [
@@ -19,9 +38,9 @@ class APIException(Exception):
         ]
 
         if 'error' in result.data:
-            message.append(result['error'])
-        elif 'err' in result.get('metadata', {}):
-            message.append(result['metadata']['err'])
+            message.append(result.data['error'])
+        elif 'err' in result.metadata:
+            message.append(result.metadata['err'])
         else:
             message.append(json.dumps(result.data, indent=4))
 
@@ -29,17 +48,33 @@ class APIException(Exception):
 
 
 class APIResult(object):
+    """
+    Represent an HTTP transaction.
+
+    .. py:attr: api
+
+        :class:`API` object which returned this result.
+
+    .. py:attr: data
+
+        JSON data from the response.
+
+    .. py:attr: request
+
+        Request object from the requests library.
+
+    .. py:attr: response
+
+        Response object from the requests library.
+    """
+
     def __init__(self, api, response):
+        """Construct a :class:`APIResult` with an :class:`API` and response."""
         self.api = api
+        self.data = response.json()
+        self.metadata = self.data.get('metadata', None)
         self.response = response
         self.request = response.request
-        self.data = response.json()
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-    def get(self, key, default):
-        return self.data.get(key, default)
 
     def request_summary(self):
         summary = ['{} {}'.format(self.request.method, self.request.url)]
@@ -57,13 +92,22 @@ class APIResult(object):
             json.dumps(self.data, indent=4),
         ])
 
+    def validate(self):
+        if self.response.status_code >= 400:
+            raise APIException(self)
+
+        def validate_metadata(data):
+            if isinstance(data.get('metadata'), dict):
+                if data['metadata'].get('status_code', 0) >= 400:
+                    raise APIException(self)
+                validate_metadata(data['metadata'])
+
     def wait(self, timeout=None):
         timeout = timeout or self.api.default_timeout
 
-        result = self.api.get('{}/wait?timeout={}', self['operation'], timeout)
-
-        if result['metadata']['status'] != 'Success':
-            raise APIException(result)
+        result = self.api.get(
+            '%s/wait?timeout=%s' % (self.data['operation'], timeout)
+        )
 
         return result
 
@@ -99,44 +143,41 @@ class API(object):
         self.session = session
         self.debug = debug or os.environ.get('DEBUG', False)
 
-    def format_url(self, url, *url_format_args):
-        try:
-            url = url.format(*url_format_args)
-        except IndexError:
-            raise Exception(
-                'Could not format %s with %s' % (url, url_format_args)
-            )
-
+    def format_url(self, url):
         if not url.startswith('/'):
             url = '/{}/{}'.format(self.default_version, url)
 
         return self.endpoint + url
 
-    def request(self, method, url, *url_format_args, **kwargs):
-        url = self.format_url(url, *url_format_args)
+    def request(self, method, url, *args, **kwargs):
+        url = self.format_url(url)
+
+        if self.debug:
+            print(method, url)
+            if 'json' in kwargs:
+                print(json.dumps(kwargs['json'], indent=4))
 
         result = APIResult(
             self,
             self.session.request(method, url, **kwargs),
         )
 
-        if result.response.status_code == 400:
-            raise APIException(result)
-
         if self.debug:
-            print(result.request_summary(), result.response_summary())
+            print(result.response_summary())
             print('=' * 24)
+
+        result.validate()
 
         return result
 
-    def delete(self, url, *url_format_args, **kwargs):
-        return self.request('DELETE', url, *url_format_args, **kwargs)
+    def delete(self, url, *args, **kwargs):
+        return self.request('DELETE', url, *args, **kwargs)
 
-    def get(self, url, *url_format_args, **kwargs):
-        return self.request('GET', url, *url_format_args, **kwargs)
+    def get(self, url, *args, **kwargs):
+        return self.request('GET', url, *args, **kwargs)
 
-    def post(self, url, *url_format_args, **kwargs):
-        return self.request('POST', url, *url_format_args, **kwargs)
+    def post(self, url, *args, **kwargs):
+        return self.request('POST', url, *args, **kwargs)
 
-    def put(self, url, *url_format_args, **kwargs):
-        return self.request('PUT', url, *url_format_args, **kwargs)
+    def put(self, url, *args, **kwargs):
+        return self.request('PUT', url, *args, **kwargs)
