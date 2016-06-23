@@ -11,15 +11,16 @@ env:
 - TOXENV=qa
 
 install:
-- test "$TOXENV" = "qa" || travis_retry wget https://github.com/novafloss/ansible-setup/archive/master.tar.gz
-- test "$TOXENV" = "qa" || tar xvjf master.tar.gz
-- test "$TOXENV" = "qa" || cd ansible-setup-master/
-- test "$TOXENV" = "qa" || sudo SETUP_LXC=1 DEBUG=1 ./setup.sh
+- test "$TOXENV" = "qa" || travis_retry sudo add-apt-repository -y ppa:ubuntu-lxc/lxd-stable
+- test "$TOXENV" = "qa" || travis_retry sudo apt-get update -y
+- test "$TOXENV" = "qa" || travis_retry sudo apt-get install -y lxd
+- test "$TOXENV" = "qa" || sudo lxd init --auto
+- test "$TOXENV" = "qa" || sudo lxc list
 - travis_retry pip install -U pip
 - travis_retry pip install tox codecov
 
 script:
-- DEBUG=1 tox -e $TOXENV
+- sudo DEBUG=1 $(which tox) -e $TOXENV
 
 after_success:
 - codecov
