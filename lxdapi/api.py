@@ -1,3 +1,6 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+
 import json
 import logging
 import pprint
@@ -119,8 +122,8 @@ class API(object):
             raise APIException(result)
 
         if self.debug:
-            print result.request_summary(), result.response_summary()
-            print '=' * 24
+            print(result.request_summary(), result.response_summary())
+            print('=' * 24)
 
         return result
 
