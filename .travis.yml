@@ -8,7 +8,7 @@ python:
 env:
   matrix:
   - TOXENV=py27
-  - TOXENV=py35
+  - TOXENV=py34
   - TOXENV=qa
 
 install:
