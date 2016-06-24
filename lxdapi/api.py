@@ -101,6 +101,7 @@ class APIResult(object):
                 if data['metadata'].get('status_code', 0) >= 400:
                     raise APIException(self)
                 validate_metadata(data['metadata'])
+        validate_metadata(self.data)
 
     def wait(self, timeout=None):
         timeout = timeout or self.api.default_timeout
