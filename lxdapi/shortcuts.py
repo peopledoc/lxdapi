@@ -38,7 +38,7 @@ def container_absent(api, container):
             )
         ).wait()
 
-    container_destroy(api, container.metadata['name'])
+    api.delete('containers/%s' % name).wait()
     return True
 
 
@@ -99,10 +99,6 @@ def container_apply_status(api, container, status):
     ).wait()
 
     return True
-
-
-def container_destroy(api, name):
-    return api.delete('containers/%s' % name).wait()
 
 
 def container_get(api, name):
