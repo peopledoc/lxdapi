@@ -119,8 +119,25 @@ class APIResult(object):
 
 
 class API(object):
+    """
+    Main entry point to interact with the HTTP API.
+
+
+    """
+
     @classmethod
     def factory(cls, endpoint=None, default_version=None, **kwargs):
+        """
+        Instanciate an :class:`API` with the right endpoint and session.
+
+        Example::
+
+            # Connect to a local socket
+            api = lxd.API.factory()
+
+            # Or, connect to a remote server (untested so far)
+            api = lxd.API.factory(base_url='http://example.com:12345')
+        """
         endpoint = endpoint or '/var/lib/lxd/unix.socket'
         default_version = default_version or '1.0'
 

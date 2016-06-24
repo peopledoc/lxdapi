@@ -1,9 +1,31 @@
+"""
+Idempotent functions and shortcuts.
+
+Functions here have the following similarities:
+
+- take a :class:`~lxdapi.api.API` as first argument,
+- return True if something has changed, False otherwise,
+- except ``_get()`` functions such as ``container_get()`` which return
+  :class:`~lxdapi.api.APIResult` for an :meth:`lxdapi.api.API.get` or False.
+"""
+
 import hashlib
 
 from .api import APIException, APINotFoundException
 
 
 def container_absent(api, container):
+    """
+    Ensure a container is absent.
+
+    Container is an APIResult for the container, to be able to compare the
+    configuration with.
+
+    It is expected that the user manages the HTTP transactions, here's an
+    example usage::
+
+        container_absent(api, container_get('yourcontainer'))
+    """
     if not container:
         return False
 
@@ -21,6 +43,18 @@ def container_absent(api, container):
 
 
 def container_apply_config(api, container, config):
+    """
+    Apply a configuration on a container.
+
+    Container is an APIResult for the container, to be able to compare the
+    configuration with.
+
+    Config is the dict to pass as JSON to the HTTP API.
+
+    Example usage::
+
+        container_apply_config(api, container_get('yourcontainer'))
+    """
     if not container:
         api.post('containers', json=config).wait()
         return True
@@ -29,6 +63,18 @@ def container_apply_config(api, container, config):
 
 
 def container_apply_status(api, container, status):
+    """Apply an LXD status to a container.
+
+    Container is an APIResult for the container, to be able to compare the
+    status with.
+
+    Status is a string, choices are: Running, Stopped, Frozen.
+
+    Example usage::
+
+        container_apply_status(api, container_get('yourcontainer'), 'Running')
+    """
+
     if status == container.metadata['status']:
         return False
 
@@ -60,6 +106,7 @@ def container_destroy(api, name):
 
 
 def container_get(api, name):
+    """Return the APIResult for a container or False."""
     try:
         return api.get('containers/%s' % name)
     except APINotFoundException:
@@ -67,6 +114,9 @@ def container_get(api, name):
 
 
 def image_absent(api, fingerprint):
+    """
+    Return False if the image is absent, otherwise delete it and return True.
+    """
     if not image_get(api, fingerprint):
         return False
 
@@ -75,11 +125,13 @@ def image_absent(api, fingerprint):
 
 
 def image_get_fingerprint(path):
+    """Return the fingerprint for an image."""
     with open(path, 'rb') as f:
         return hashlib.sha256(f.read()).hexdigest()
 
 
 def image_get(api, fingerprint):
+    """Return the :class:`APIResult` for a fingerprint or False."""
     try:
         return api.get('images/%s' % fingerprint)
     except APINotFoundException:
