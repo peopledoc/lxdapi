@@ -96,6 +96,12 @@ class APIResult(object):
             json.dumps(self.data, indent=4),
         ])
 
+    def validate_metadata(self, data):
+        if isinstance(data.get('metadata'), dict):
+            if data['metadata'].get('status_code', 0) >= 400:
+                raise APIException(self)
+            self.validate_metadata(data['metadata'])
+
     def validate(self):
         if self.response.status_code == 404:
             raise APINotFoundException(self)
@@ -103,12 +109,7 @@ class APIResult(object):
         if self.response.status_code >= 400:
             raise APIException(self)
 
-        def validate_metadata(data):
-            if isinstance(data.get('metadata'), dict):
-                if data['metadata'].get('status_code', 0) >= 400:
-                    raise APIException(self)
-                validate_metadata(data['metadata'])
-        validate_metadata(self.data)
+        self.validate_metadata(self.data)
 
     def wait(self, timeout=None):
         timeout = timeout or self.api.default_timeout
