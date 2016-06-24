@@ -6,8 +6,6 @@ python:
 - '3.5'
 
 env:
-  global:
-  - DEBUG=1
   matrix:
   - TOXENV=py27
   - TOXENV=py35
@@ -23,7 +21,7 @@ install:
 - travis_retry pip install tox codecov
 
 script:
-- sudo DEBUG=1 $(which tox) -e $TOXENV
+- sudo TEST_ONLINE=1 DEBUG=1 $(which tox) -e $TOXENV
 
 after_success:
 - codecov
