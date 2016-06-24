@@ -18,8 +18,8 @@ def container_absent(api, container):
     """
     Ensure a container is absent.
 
-    Container is an APIResult for the container, to be able to compare the
-    configuration with.
+    Container is an :class:`~lxdapi.api.APIResult` for the container, to be
+    able to compare the configuration with.
 
     It is expected that the user manages the HTTP transactions, here's an
     example usage::
@@ -46,8 +46,8 @@ def container_apply_config(api, container, config):
     """
     Apply a configuration on a container.
 
-    Container is an APIResult for the container, to be able to compare the
-    configuration with.
+    Container is an:class:`lxdapi.api.APIResult`for the container, to be able
+    to compare the configuration with.
 
     Config is the dict to pass as JSON to the HTTP API.
 
@@ -65,8 +65,8 @@ def container_apply_config(api, container, config):
 def container_apply_status(api, container, status):
     """Apply an LXD status to a container.
 
-    Container is an APIResult for the container, to be able to compare the
-    status with.
+    Container is an:class:`lxdapi.api.APIResult`for the container, to be able
+    to compare the status with.
 
     Status is a string, choices are: Running, Stopped, Frozen.
 
@@ -102,7 +102,7 @@ def container_apply_status(api, container, status):
 
 
 def container_get(api, name):
-    """Return the APIResult for a container or False."""
+    """Return the:class:`lxdapi.api.APIResult`for a container or False."""
     try:
         return api.get('containers/%s' % name)
     except APINotFoundException:
@@ -135,6 +135,7 @@ def image_get(api, fingerprint):
 
 
 def image_present(api, path, fingerprint=None):
+    """Ensure an image is present."""
     fingerprint = fingerprint or image_get_fingerprint(path)
 
     if image_get(api, fingerprint):
@@ -150,6 +151,7 @@ def image_present(api, path, fingerprint=None):
 
 
 def image_alias_present(api, name, target, description=None):
+    """Ensure an image has an alias."""
     try:
         result = api.get('images/aliases/%s' % name)
     except APINotFoundException:
