@@ -38,7 +38,7 @@ def container_absent(api, container):
             )
         ).wait()
 
-    api.delete('containers/%s' % name).wait()
+    api.delete('containers/%s' % container.metadata['name']).wait()
     return True
 
 
