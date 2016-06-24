@@ -1,6 +1,12 @@
 lxdapi
 ~~~~~~
 
+.. image:: https://codecov.io/gh/novafloss/lxdapi/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/novafloss/lxdapi
+
+.. image:: https://travis-ci.org/novafloss/lxdapi.svg?branch=master
+   :target: https://travis-ci.org/novafloss/lxdapi
+
 This library includes basic helpers encapsulating boring business logic code
 for interacting with the lxd daemon. It is an experimental alternative to the
 pylxd approach. The purpose of this library is **not** to be a full blown
