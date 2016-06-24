@@ -62,14 +62,12 @@ def container_destroy(api, name):
 def container_get(api, name):
     try:
         return api.get('containers/%s' % name)
-    except APIException as e:
-        if e.result.response.status_code == 404:
-            return None
-        raise
+    except APINotFoundException:
+        return False
 
 
 def image_absent(api, fingerprint):
-    if not image_is_present(api, fingerprint):
+    if not image_get(api, fingerprint):
         return False
 
     api.delete('images/%s' % fingerprint).wait()
@@ -81,18 +79,17 @@ def image_get_fingerprint(path):
         return hashlib.sha256(f.read()).hexdigest()
 
 
-def image_is_present(api, fingerprint):
+def image_get(api, fingerprint):
     try:
-        api.get('images/%s' % fingerprint)
+        return api.get('images/%s' % fingerprint)
     except APINotFoundException:
         return False
-    return True
 
 
 def image_present(api, path, fingerprint=None):
     fingerprint = fingerprint or image_get_fingerprint(path)
 
-    if image_is_present(api, fingerprint):
+    if image_get(api, fingerprint):
         return False  # nuthin to do
 
     with open(path, 'rb') as f:
