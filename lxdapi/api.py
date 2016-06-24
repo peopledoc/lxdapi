@@ -106,11 +106,9 @@ class APIResult(object):
     def wait(self, timeout=None):
         timeout = timeout or self.api.default_timeout
 
-        result = self.api.get(
+        return self.api.get(
             '%s/wait?timeout=%s' % (self.data['operation'], timeout)
         )
-
-        return result
 
 
 class API(object):

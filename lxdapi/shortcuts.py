@@ -26,7 +26,7 @@ def container_apply_config(api, container, config):
 
 
 def container_apply_status(api, container, status):
-    if status == container['metadata']['status']:
+    if status == container.metadata['status']:
         return False
 
     if status == 'Running':
