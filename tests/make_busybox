@@ -8,14 +8,14 @@ fi
 path=$(mktemp --directory lxdapi.busybox.XXXXXXXX)
 arch=$(uname --machine)
 
-mkdir -p $path/rootfs/{bin,dev,etc,mnt,proc,root,sys,tmp}
+mkdir -p $path/rootfs/{bin,dev,etc,mnt,proc,root,sbin,sys,tmp,usr/sbin,usr/bin}
 
 # Add an /etc/inittab; this is to work around:
 # http://lists.busybox.net/pipermail/busybox/2015-November/083618.html
 # Basically, since there are some hardcoded defaults that misbehave, we
 # just pass an empty inittab so those aren't applied, and then busybox
 # doesn't spin forever.
-touch $path/rootfs/etc/inittab
+echo > $path/rootfs/etc/inittab
 
 cat > $path/metadata.yaml <<EOF
 architecture: $arch
@@ -26,22 +26,11 @@ properties:
     description: Busybox $arch
     name: Busybox-$arch
 EOF
-cat > $path/metadata.yaml <<EOF
-{
-    "architecture": "x86_64",
-    "creation_date": 1463647974,
-    "properties": {
-        "architecture": "x86_64",
-        "description": "Busybox x86_64",
-        "name": "busybox-x86_64",
-        "obfuscate": "<function uuid4 at 0x7f7e75833488>",
-        "os": "Busybox"
-    }
-}
-EOF
 
 cp $(which busybox) $path/rootfs/bin
-$path/rootfs/bin/busybox --install -s $path/rootfs/bin
+for i in $($path/rootfs/bin/busybox --list-install); do
+    ln -sfn /bin/busybox "$path/rootfs/$i"
+done
 
 pushd $path
 tar cvJf $image *

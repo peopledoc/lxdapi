@@ -43,10 +43,8 @@ def test_container():
         name=name,
         source=dict(
             type='image',
-            mode='pull',
-            server='https://images.linuxcontainers.org',
             protocol='lxd',
-            alias='ubuntu/xenial/amd64',
+            alias=busybox_alias,
         ),
         profiles=['default'],
     )
