@@ -6,9 +6,12 @@ python:
 - '3.5'
 
 env:
-- TOXENV=py27
-- TOXENV=py35
-- TOXENV=qa
+  global:
+  - DEBUG=1
+  matrix:
+  - TOXENV=py27
+  - TOXENV=py35
+  - TOXENV=qa
 
 install:
 - test "$TOXENV" = "qa" || travis_retry sudo add-apt-repository -y ppa:ubuntu-lxc/lxd-stable
