@@ -1,9 +1,11 @@
-from .api import APIException
+import hashlib
+
+from .api import APIException, APINotFoundException
 
 
 def container_absent(api, container):
     if not container:
-        return True
+        return False
 
     if container.metadata['status'] == 'Running':
         api.put(
@@ -15,6 +17,7 @@ def container_absent(api, container):
         ).wait()
 
     container_destroy(api, container.metadata['name'])
+    return True
 
 
 def container_apply_config(api, container, config):
@@ -42,14 +45,14 @@ def container_apply_status(api, container, status):
         ))
 
     api.put(
-        'containers/%s/state' % container.data['name'],
+        'containers/%s/state' % container.metadata['name'],
         json=dict(
             action=action,
             timeout=api.default_timeout,
         )
     ).wait()
 
-    return container, True
+    return True
 
 
 def container_destroy(api, name):
@@ -63,3 +66,58 @@ def container_get(api, name):
         if e.result.response.status_code == 404:
             return None
         raise
+
+
+def image_absent(api, fingerprint):
+    if not image_is_present(api, fingerprint):
+        return False
+
+    api.delete('images/%s' % fingerprint).wait()
+    return True
+
+
+def image_get_fingerprint(path):
+    with open(path, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def image_is_present(api, fingerprint):
+    try:
+        api.get('images/%s' % fingerprint)
+    except APINotFoundException:
+        return False
+    return True
+
+
+def image_present(api, path, fingerprint=None):
+    fingerprint = fingerprint or image_get_fingerprint(path)
+
+    if image_is_present(api, fingerprint):
+        return False  # nuthin to do
+
+    with open(path, 'rb') as f:
+        headers = {
+            'X-LXD-Public': '1',
+        }
+        api.post('images', data=f.read(), headers=headers).wait()
+
+    return True
+
+
+def image_alias_present(api, name, target, description=None):
+    try:
+        result = api.get('images/aliases/%s' % name)
+    except APINotFoundException:
+        pass
+    else:
+        if result.metadata['target'] == target:
+            return False
+        api.delete('images/aliases/%s' % name)
+
+    api.post('images/aliases', json=dict(
+        name=name,
+        target=target,
+        description=description or '',
+    ))
+
+    return True

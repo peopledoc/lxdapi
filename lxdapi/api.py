@@ -47,6 +47,10 @@ class APIException(Exception):
         super(APIException, self).__init__(' '.join(message))
 
 
+class APINotFoundException(APIException):
+    """Child of APIException for 404."""
+
+
 class APIResult(object):
     """
     Represent an HTTP transaction.
@@ -93,6 +97,9 @@ class APIResult(object):
         ])
 
     def validate(self):
+        if self.response.status_code == 404:
+            raise APINotFoundException(self)
+
         if self.response.status_code >= 400:
             raise APIException(self)
 
