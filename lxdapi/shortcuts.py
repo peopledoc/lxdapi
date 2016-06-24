@@ -11,7 +11,7 @@ Functions here have the following similarities:
 
 import hashlib
 
-from .api import APIException, APINotFoundException
+from .api import APINotFoundException
 
 
 def container_absent(api, container):
