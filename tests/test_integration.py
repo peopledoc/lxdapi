@@ -35,8 +35,9 @@ def test_images():
 
 
 def test_container():
-    lxd.image_present(api, busybox)
-    lxd.image_alias_present(api, busybox_alias, busybox_fingerprint)
+    if not os.environ.get('TEST_ONLINE', False):
+        lxd.image_present(api, busybox)
+        lxd.image_alias_present(api, busybox_alias, busybox_fingerprint)
 
     name = 'lxdapi-test-container'
     config = dict(
@@ -48,6 +49,11 @@ def test_container():
         ),
         profiles=['default'],
     )
+
+    if os.environ.get('TEST_ONLINE', False):
+        config['source']['mode'] = 'pull'
+        config['source']['server'] = 'https://images.linuxcontainers.org'
+        config['source']['alias'] = 'ubuntu/xenial/amd64'
 
     # Clean potential leftover from other test run
     lxd.container_absent(api, lxd.container_get(api, name))
